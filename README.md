@@ -1,15 +1,1 @@
-Properties props = new Properties();
-
-props.put("bootstrap.servers", "localhost:9092");
-
-props.put("group.id", "test-group");
-
-props.put("enable.auto.commit", "true");
-
-props.put("auto.commit.interval.ms", "1000");
-
-props.put("max.poll.records", "100");
-
-props.put("max.poll.interval.ms", "1000");
-
-props.put("partition.assignment.strategy", "org.apache.kafka.clients.consumer.RoundRobinAssignor");
+To partition a Kafka topic, you can set the num.partitions configuration parameter when creating the topic. This parameter specifies the number of partitions to create in the topic. You can then use multiple consumer instances to consume each partition, as described above.
