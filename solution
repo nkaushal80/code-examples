@@ -1,0 +1,68 @@
+
+
+import java.io.*;
+import java.util.*;
+
+public class Solution {
+  public static void main(String[] argv) {
+  String[][] instructions_1 = {
+      {"jasmin", "tulip"},
+      {"lily", "tulip"},
+      {"tulip", "tulip"},
+      {"rose", "rose"},
+      {"violet", "rose"},
+      {"sunflower", "violet"},
+      {"daisy", "violet"},
+      {"iris", "violet"}
+    };
+
+    String[][] instructions_2 = {
+      {"jasmin", "tulip"},
+      {"lily", "tulip"},
+      {"tulip", "violet"},
+      {"violet", "violet"}
+    };
+
+    String[] treasure_rooms_1 = {"lily", "tulip", "violet", "rose"};
+    String[] treasure_rooms_2 = {"lily", "jasmin", "violet"};
+    String[] treasure_rooms_3 = {"violet"};
+    
+    
+    System.out.println(filter_rooms(treasure_rooms_1, instructions_1).toString())  ;  
+  System.out.println(filter_rooms(treasure_rooms_2, instructions_1) .toString())   ;
+  System.out.println(filter_rooms(treasure_rooms_3, instructions_2) .toString())   ;
+  }
+  
+  private static List<String> filter_rooms(String[] treasure_rooms_1, String[][] instructions_1 ){
+    Map<String, Integer > instrMap = new HashMap<String, Integer>();
+    List<String> list = new ArrayList<String>();
+  for(int i =0; i<instructions_1.length ;i++){
+    String[] entry = instructions_1[i];
+    
+    if(!entry[1].equals(entry[0])){
+      int temp = 0;
+      if(instrMap.get(entry[1]) == null){
+       temp = 0; 
+      }
+        
+      else{
+          temp = instrMap.get(entry[1]);
+      }
+      instrMap.put(entry[1],temp+1);
+    }
+  }  
+  System.out.println(instrMap.toString());
+  for(String str : treasure_rooms_1){
+    if(instrMap.containsKey(str) && instrMap.get(str)>=2){
+      list.add(str);
+      
+    }
+  }
+  return list;
+  }
+  
+  
+  
+  
+  
+}
