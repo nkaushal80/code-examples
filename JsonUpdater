@@ -1,5 +1,6 @@
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public class JsonUpdater {
@@ -29,7 +30,7 @@ public class JsonUpdater {
     }
 
     private static void updateJson(JsonNode originalNode, JsonNode diffNode) {
-        if (diffNode.isObject()) {
+        if (diffNode.isObject() && originalNode.isObject()) {
             ObjectNode originalObjectNode = (ObjectNode) originalNode;
             ObjectNode diffObjectNode = (ObjectNode) diffNode;
 
@@ -52,6 +53,29 @@ public class JsonUpdater {
                     originalObjectNode.set(fieldName, diffFieldValue);
                 }
             });
+        } else if (diffNode.isArray() && originalNode.isArray()) {
+            ArrayNode originalArrayNode = (ArrayNode) originalNode;
+            ArrayNode diffArrayNode = (ArrayNode) diffNode;
+
+            for (int i = 0; i < diffArrayNode.size(); i++) {
+                JsonNode diffArrayElement = diffArrayNode.get(i);
+
+                // Check if the original array is long enough
+                if (i < originalArrayNode.size()) {
+                    JsonNode originalArrayElement = originalArrayNode.get(i);
+
+                    if (originalArrayElement.isObject() && diffArrayElement.isObject()) {
+                        // Recursive update for nested objects in arrays
+                        updateJson(originalArrayElement, diffArrayElement);
+                    } else {
+                        // Update the array element
+                        originalArrayNode.set(i, diffArrayElement);
+                    }
+                } else {
+                    // Original array is shorter, add the elements
+                    originalArrayNode.add(diffArrayElement);
+                }
+            }
         }
     }
 }
