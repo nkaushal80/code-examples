@@ -3,95 +3,84 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
 public class JsonUpdater {
 
     public static void main(String[] args) throws Exception {
         // Original JSON
-        String originalJson = "{\"name\":\"John\",\"age\":25,\"city\":\"New York\"}";
+        String originalJson = "{\"name\":\"John\",\"age\":25,\"city\":\"New York\",\"contacts\":[{\"type\":\"email\",\"value\":\"john@example.com\"}]}";
 
         // Updated JSON with differences
-        String updatedJson = "{\"name\":\"John\",\"age\":26,\"city\":\"New York\"}";
+        String updatedJson = "{\"name\":\"John\",\"age\":26,\"city\":\"New York\",\"contacts\":[{\"type\":\"phone\",\"value\":\"123-456-7890\"}]}";
 
         // Parse JSON strings to JsonNode
         ObjectMapper objectMapper = new ObjectMapper();
         JsonNode originalNode = objectMapper.readTree(originalJson);
         JsonNode updatedNode = objectMapper.readTree(updatedJson);
 
-        // Compare and update the original JSON
-        JsonNode diffNode = getJsonDiff(originalNode, updatedNode);
-        updateJson(originalNode, diffNode);
+        // Compare and update the original JSON tree
+        updateJson(originalNode, updatedNode);
 
-        // Print the updated JSON
+        // Print the updated JSON tree
         System.out.println(originalNode);
     }
 
-    private static JsonNode getJsonDiff(JsonNode originalNode, JsonNode updatedNode) {
-        return JsonDiff.asJson(originalNode, updatedNode);
-    }
-
-    private static void updateJson(JsonNode originalNode, JsonNode diffNode) {
-        if (diffNode.isObject() && originalNode.isObject()) {
+    private static void updateJson(JsonNode originalNode, JsonNode updatedNode) {
+        if (originalNode.isObject() && updatedNode.isObject()) {
             ObjectNode originalObjectNode = (ObjectNode) originalNode;
-            ObjectNode diffObjectNode = (ObjectNode) diffNode;
+            ObjectNode updatedObjectNode = (ObjectNode) updatedNode;
 
-            diffObjectNode.fields().forEachRemaining(entry -> {
+            updatedObjectNode.fields().forEachRemaining(entry -> {
                 String fieldName = entry.getKey();
-                JsonNode diffFieldValue = entry.getValue();
+                JsonNode updatedFieldValue = entry.getValue();
 
                 if (originalObjectNode.has(fieldName)) {
                     JsonNode originalFieldValue = originalObjectNode.get(fieldName);
 
-                    if (originalFieldValue.isObject() && diffFieldValue.isObject()) {
+                    if (originalFieldValue.isObject() && updatedFieldValue.isObject()) {
                         // Recursive update for nested objects
-                        updateJson(originalFieldValue, diffFieldValue);
+                        updateJson(originalFieldValue, updatedFieldValue);
+                    } else if (originalFieldValue.isArray() && updatedFieldValue.isArray()) {
+                        // Recursive update for nested arrays
+                        updateJson(originalFieldValue, updatedFieldValue);
                     } else {
                         // Update the field value
-                        originalObjectNode.set(fieldName, diffFieldValue);
+                        originalObjectNode.set(fieldName, updatedFieldValue);
                     }
                 } else {
                     // Field doesn't exist in the original JSON, add it
-                    originalObjectNode.set(fieldName, diffFieldValue);
+                    originalObjectNode.set(fieldName, updatedFieldValue);
                 }
             });
-        } else if (diffNode.isArray() && originalNode.isArray()) {
+        } else if (originalNode.isArray() && updatedNode.isArray()) {
             ArrayNode originalArrayNode = (ArrayNode) originalNode;
-            ArrayNode diffArrayNode = (ArrayNode) diffNode;
+            ArrayNode updatedArrayNode = (ArrayNode) updatedNode;
 
-            for (int i = 0; i < diffArrayNode.size(); i++) {
-                JsonNode diffArrayElement = diffArrayNode.get(i);
+            // Update array elements
+            for (int i = 0; i < Math.min(originalArrayNode.size(), updatedArrayNode.size()); i++) {
+                JsonNode originalArrayElement = originalArrayNode.get(i);
+                JsonNode updatedArrayElement = updatedArrayNode.get(i);
 
-                // Check if the original array is long enough
-                if (i < originalArrayNode.size()) {
-                    JsonNode originalArrayElement = originalArrayNode.get(i);
-
-                    if (originalArrayElement.isObject() && diffArrayElement.isObject()) {
-                        // Recursive update for nested objects in arrays
-                        updateJson(originalArrayElement, diffArrayElement);
-                    } else {
-                        // Update the array element
-                        originalArrayNode.set(i, diffArrayElement);
-                    }
+                if (originalArrayElement.isObject() && updatedArrayElement.isObject()) {
+                    // Recursive update for nested objects in arrays
+                    updateJson(originalArrayElement, updatedArrayElement);
+                } else if (originalArrayElement.isArray() && updatedArrayElement.isArray()) {
+                    // Recursive update for nested arrays in arrays
+                    updateJson(originalArrayElement, updatedArrayElement);
                 } else {
-                    // Original array is shorter, add the elements
-                    originalArrayNode.add(diffArrayElement);
+                    // Update the array element
+                    originalArrayNode.set(i, updatedArrayElement);
                 }
             }
-        }
-    }
 
-private static JsonNode findNode(JsonNode rootNode, String jsonPath) {
-        String[] pathElements = jsonPath.split("\\.");
-
-        JsonNode currentNode = rootNode;
-        for (String pathElement : pathElements) {
-            currentNode = currentNode.path(pathElement);
-
-            // If the node is missing, return null
-            if (currentNode.isMissingNode()) {
-                return null;
+            // Add remaining elements if any
+            for (int i = originalArrayNode.size(); i < updatedArrayNode.size(); i++) {
+                originalArrayNode.add(updatedArrayNode.get(i));
             }
         }
-
-        return currentNode;
     }
 }
