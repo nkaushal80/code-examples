@@ -78,4 +78,20 @@ public class JsonUpdater {
             }
         }
     }
+
+private static JsonNode findNode(JsonNode rootNode, String jsonPath) {
+        String[] pathElements = jsonPath.split("\\.");
+
+        JsonNode currentNode = rootNode;
+        for (String pathElement : pathElements) {
+            currentNode = currentNode.path(pathElement);
+
+            // If the node is missing, return null
+            if (currentNode.isMissingNode()) {
+                return null;
+            }
+        }
+
+        return currentNode;
+    }
 }
