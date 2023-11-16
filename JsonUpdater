@@ -1,0 +1,57 @@
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
+public class JsonUpdater {
+
+    public static void main(String[] args) throws Exception {
+        // Original JSON
+        String originalJson = "{\"name\":\"John\",\"age\":25,\"city\":\"New York\"}";
+
+        // Updated JSON with differences
+        String updatedJson = "{\"name\":\"John\",\"age\":26,\"city\":\"New York\"}";
+
+        // Parse JSON strings to JsonNode
+        ObjectMapper objectMapper = new ObjectMapper();
+        JsonNode originalNode = objectMapper.readTree(originalJson);
+        JsonNode updatedNode = objectMapper.readTree(updatedJson);
+
+        // Compare and update the original JSON
+        JsonNode diffNode = getJsonDiff(originalNode, updatedNode);
+        updateJson(originalNode, diffNode);
+
+        // Print the updated JSON
+        System.out.println(originalNode);
+    }
+
+    private static JsonNode getJsonDiff(JsonNode originalNode, JsonNode updatedNode) {
+        return JsonDiff.asJson(originalNode, updatedNode);
+    }
+
+    private static void updateJson(JsonNode originalNode, JsonNode diffNode) {
+        if (diffNode.isObject()) {
+            ObjectNode originalObjectNode = (ObjectNode) originalNode;
+            ObjectNode diffObjectNode = (ObjectNode) diffNode;
+
+            diffObjectNode.fields().forEachRemaining(entry -> {
+                String fieldName = entry.getKey();
+                JsonNode diffFieldValue = entry.getValue();
+
+                if (originalObjectNode.has(fieldName)) {
+                    JsonNode originalFieldValue = originalObjectNode.get(fieldName);
+
+                    if (originalFieldValue.isObject() && diffFieldValue.isObject()) {
+                        // Recursive update for nested objects
+                        updateJson(originalFieldValue, diffFieldValue);
+                    } else {
+                        // Update the field value
+                        originalObjectNode.set(fieldName, diffFieldValue);
+                    }
+                } else {
+                    // Field doesn't exist in the original JSON, add it
+                    originalObjectNode.set(fieldName, diffFieldValue);
+                }
+            });
+        }
+    }
+}
